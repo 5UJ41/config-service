@@ -73,10 +73,14 @@ def build_config(set_params):
 
 @app.get("/effective-config")
 @app.get("/api/effective-config")
+@app.get("/api/index/effective-config")
 def effective_config(request: Request):
     return build_config(request.query_params.getlist("set"))
 
 
-@app.get("/")
-def home():
-    return {"status": "ok", "try": "/effective-config?set=port=9000&set=debug=true"}
+# Safety net: Vercel may hand the app a different path than the one typed in the browser
+# (for example /api/index), which FastAPI would answer with {"detail":"Not Found"}.
+# This catch-all (it must stay LAST) returns the config for any other GET path.
+@app.get("/{full_path:path}")
+def anything_else(full_path: str, request: Request):
+    return build_config(request.query_params.getlist("set"))
